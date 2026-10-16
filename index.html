@@ -1,0 +1,294 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#100b19">
+    <meta name="description" content="Monte seu açaí na HEVO AÇAÍ. Escolha o tamanho, cobertura e adicionais.">
+    <title>HEVO AÇAÍ | Monte seu Açaí</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <header class="header">
+        <a class="brand" href="#" aria-label="HEVO AÇAÍ - início">
+            <img class="logo" src="logo-hevo.png" alt="Logotipo HEVO AÇAÍ">
+            <div class="brand-text">
+                <h1>HEVO <span>AÇAÍ</span></h1>
+                <p>Seu açaí do seu jeito!</p>
+            </div>
+        </a>
+
+        <div class="header-actions">
+            <button id="recursos-toggle" class="features-button" type="button" aria-expanded="false" aria-controls="recursos-menu">
+                ☰ Recursos
+            </button>
+            <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Ativar tema claro">☀️</button>
+        </div>
+
+        <nav id="recursos-menu" class="resources-menu" hidden>
+            <h2>Recursos da HEVO AÇAÍ</h2>
+            <a href="#tamanho">🥤 Escolher tamanho</a>
+            <a href="#cobertura">🍫 Escolher cobertura</a>
+            <a href="#adicionais">🍓 Adicionar complementos</a>
+            <a href="#observacoes-pedido">📝 Observações do pedido</a>
+            <a href="#dados">📍 Dados para entrega</a>
+            <a href="#resumo">🛒 Resumo e cálculo do pedido</a>
+            <a href="#rastreamento">📦 Rastrear pedido</a>
+            <p>O rastreamento é demonstrativo e depende de integração com a loja para funcionar em tempo real.</p>
+        </nav>
+    </header>
+
+    <main class="container">
+        <section class="hero">
+            <div class="hero-content">
+                <span class="eyebrow">🍇 SEU MOMENTO MAIS REFRESCANTE</span>
+                <h2>Seu açaí.<br><span>Suas regras.</span></h2>
+                <p>Escolha seus ingredientes favoritos e monte uma combinação deliciosa!</p>
+                <a class="hero-button" href="#tamanho">Montar meu açaí <span>↓</span></a>
+            </div>
+
+            <div class="hero-decoration">
+                <img src="acai.png" alt="Açaí preparado com ingredientes frescos">
+                <span class="hero-badge">Feito do seu jeito ✨</span>
+            </div>
+        </section>
+
+        <form id="pedido-form" novalidate>
+            <section class="card" id="tamanho">
+                <div class="section-heading">
+                    <div class="section-number">01</div>
+                    <div>
+                        <h2>Escolha o tamanho</h2>
+                        <p>Qual vai ser o tamanho da sua vontade?</p>
+                    </div>
+                </div>
+
+                <div class="options-grid">
+                    <label class="base-option">
+                        <input type="radio" name="tamanho" value="300" data-price="12">
+                        <span class="option-emoji">🥤</span>
+                        <span class="option-info"><strong>300 ml</strong><small>R$ 12,00</small></span>
+                    </label>
+                    <label class="base-option">
+                        <input type="radio" name="tamanho" value="500" data-price="16" checked>
+                        <span class="option-emoji">🥤</span>
+                        <span class="option-info"><strong>500 ml</strong><small>R$ 16,00</small></span>
+                    </label>
+                    <label class="base-option">
+                        <input type="radio" name="tamanho" value="700" data-price="20">
+                        <span class="option-emoji">🥤</span>
+                        <span class="option-info"><strong>700 ml</strong><small>R$ 20,00</small></span>
+                    </label>
+                    <label class="base-option">
+                        <input type="radio" name="tamanho" value="1000" data-price="27">
+                        <span class="option-emoji">🥤</span>
+                        <span class="option-info"><strong>1 litro</strong><small>R$ 27,00</small></span>
+                    </label>
+                </div>
+
+                <p class="limit-info">Limite de adicionais: 300 ml até 2; 500 ml até 4; 700 ml até 6; 1 litro até 8.</p>
+            </section>
+
+            <section class="card" id="cobertura">
+                <div class="section-heading">
+                    <div class="section-number">02</div>
+                    <div>
+                        <h2>Escolha sua cobertura</h2>
+                        <p>Selecione sua opção favorita.</p>
+                    </div>
+                </div>
+
+                <div class="options-grid">
+                    <label class="base-option">
+                        <input type="radio" name="base" value="Chocolate" data-price="0" checked>
+                        <span class="option-emoji">🍫</span>
+                        <span class="option-info"><strong>Chocolate</strong><small>Incluso no preço</small></span>
+                    </label>
+                    <label class="base-option">
+                        <input type="radio" name="base" value="Morango" data-price="0">
+                        <span class="option-emoji">🍓</span>
+                        <span class="option-info"><strong>Morango</strong><small>Incluso no preço</small></span>
+                    </label>
+                    <label class="base-option">
+                        <input type="radio" name="base" value="Leite condensado" data-price="2">
+                        <span class="option-emoji">🥛</span>
+                        <span class="option-info"><strong>Leite condensado</strong><small>+ R$ 2,00</small></span>
+                    </label>
+                </div>
+            </section>
+
+            <section class="card" id="adicionais">
+                <div class="section-heading">
+                    <div class="section-number">03</div>
+                    <div>
+                        <h2>Adicionais</h2>
+                        <p>Escolha seus favoritos respeitando o limite do copo.</p>
+                    </div>
+                </div>
+
+                <h3 class="group-title">🍓 Frutas</h3>
+                <div class="options-grid">
+                    <label class="extra-option"><input type="checkbox" name="adicional" value="Banana" data-price="2"><span>🍌 Banana</span><strong>+ R$ 2,00</strong></label>
+                    <label class="extra-option"><input type="checkbox" name="adicional" value="Morango" data-price="3"><span>🍓 Morango</span><strong>+ R$ 3,00</strong></label>
+                    <label class="extra-option"><input type="checkbox" name="adicional" value="Kiwi" data-price="3"><span>🥝 Kiwi</span><strong>+ R$ 3,00</strong></label>
+                    <label class="extra-option"><input type="checkbox" name="adicional" value="Uva" data-price="2"><span>🍇 Uva</span><strong>+ R$ 2,00</strong></label>
+                    <label class="extra-option"><input type="checkbox" name="adicional" value="Manga" data-price="2"><span>🥭 Manga</span><strong>+ R$ 2,00</strong></label>
+                </div>
+
+                <h3 class="group-title">🍪 Crocantes e cremosos</h3>
+                <div class="options-grid">
+                    <label class="extra-option"><input type="checkbox" name="adicional" value="Granola" data-price="2"><span>🥣 Granola</span><strong>+ R$ 2,00</strong></label>
+                    <label class="extra-option"><input type="checkbox" name="adicional" value="Leite em pó" data-price="2"><span>🥛 Leite em pó</span><strong>+ R$ 2,00</strong></label>
+                    <label class="extra-option"><input type="checkbox" name="adicional" value="Leite condensado" data-price="2"><span>🍯 Leite condensado</span><strong>+ R$ 2,00</strong></label>
+                    <label class="extra-option"><input type="checkbox" name="adicional" value="Creme de avelã" data-price="4"><span>🍫 Creme de avelã</span><strong>+ R$ 4,00</strong></label>
+                    <label class="extra-option"><input type="checkbox" name="adicional" value="Paçoca" data-price="2"><span>🥜 Paçoca</span><strong>+ R$ 2,00</strong></label>
+                    <label class="extra-option"><input type="checkbox" name="adicional" value="Confete de chocolate" data-price="2"><span>🍬 Confete de chocolate</span><strong>+ R$ 2,00</strong></label>
+                    <label class="extra-option"><input type="checkbox" name="adicional" value="Biscoito" data-price="3"><span>🍪 Biscoito</span><strong>+ R$ 3,00</strong></label>
+                    <label class="extra-option"><input type="checkbox" name="adicional" value="Amendoim" data-price="2"><span>🥜 Amendoim</span><strong>+ R$ 2,00</strong></label>
+                </div>
+
+                <h3 class="group-title">🍯 Caldas</h3>
+                <div class="options-grid">
+                    <label class="extra-option"><input type="checkbox" name="adicional" value="Calda de chocolate" data-price="2"><span>🍫 Calda de chocolate</span><strong>+ R$ 2,00</strong></label>
+                    <label class="extra-option"><input type="checkbox" name="adicional" value="Calda de morango" data-price="2"><span>🍓 Calda de morango</span><strong>+ R$ 2,00</strong></label>
+                    <label class="extra-option"><input type="checkbox" name="adicional" value="Mel" data-price="2"><span>🍯 Mel</span><strong>+ R$ 2,00</strong></label>
+                </div>
+
+                <div id="aviso-limite" class="notice warning" role="status" aria-live="polite" hidden></div>
+            </section>
+
+            <section class="card observations-card" id="observacoes-pedido">
+                <div class="section-heading">
+                    <div class="section-number">✦</div>
+                    <div>
+                        <h2>Observações do pedido</h2>
+                        <p>Conte para nós como você prefere seu açaí.</p>
+                    </div>
+                </div>
+
+                <label for="observacao">Algum detalhe especial?</label>
+                <textarea id="observacao" name="observacao" rows="4" maxlength="500" placeholder="Ex.: colocar a banana por cima, pouco leite condensado, separar a calda..."></textarea>
+                <div class="observation-footer">
+                    <span>Opcional · Até 500 caracteres</span>
+                    <span class="neon-dot"></span>
+                </div>
+            </section>
+
+            <section class="card" id="dados">
+                <div class="section-heading">
+                    <div class="section-number">04</div>
+                    <div>
+                        <h2>Dados para entrega</h2>
+                        <p>Precisamos dessas informações para identificar seu pedido.</p>
+                    </div>
+                </div>
+
+                <div class="field-group">
+                    <label for="cliente">Nome completo <span class="required">*</span></label>
+                    <input id="cliente" name="cliente" type="text" autocomplete="name" placeholder="Digite seu nome completo" required>
+                </div>
+
+                <div class="field-group">
+                    <label for="telefone">Telefone com DDD <span class="required">*</span></label>
+                    <div class="phone-group">
+                        <select id="codigo-pais" aria-label="Código do país">
+                            <option value="+55" selected>🇧🇷 +55</option>
+                        </select>
+                        <input id="telefone" name="telefone" type="tel" autocomplete="tel-national" inputmode="numeric" maxlength="15" placeholder="(41) 99999-9999" required>
+                    </div>
+                    <small class="field-help">Informe o DDD e o número do telefone.</small>
+                </div>
+
+                <div class="field-group">
+                    <label for="bairro">Bairro de entrega <span class="required">*</span></label>
+                    <select id="bairro" name="bairro" required>
+                        <option value="">Selecione seu bairro</option>
+                        <option value="Meliane">Meliane</option>
+                        <option value="Gorski">Gorski</option>
+                        <option value="Centro">Centro</option>
+                        <option value="Jardim Esmeralda">Jardim Esmeralda</option>
+                        <option value="Itaqui">Itaqui</option>
+                        <option value="Rivabem">Rivabem</option>
+                        <option value="Ferraria">Ferraria</option>
+                        <option value="Partenope">Partenope</option>
+                        <option value="Vila Bancaria">Vila Bancaria</option>
+                        <option value="Bom Jesus">Bom Jesus</option>
+                        <option value="Boa Vista">Boa Vista</option>
+                        <option value="Cristo Rei">Cristo Rei</option>
+                        <option value="Ouro Verde">Ouro Verde</option>
+                        <option value="Aguas Claras">Aguas Claras</option>
+                        <option value="Itambezinho">Itambezinho</option>
+                    </select>
+                </div>
+
+                <div class="delivery-info">
+                    <div class="delivery-info-heading"><span>🚚</span><strong>Informações de entrega</strong></div>
+                    <p>Centro: R$ 5,00</p>
+                    <p>Demais bairros: R$ 10,00</p>
+                    <p id="taxa-entrega">Selecione seu bairro para calcular.</p>
+                    <p id="tempo-entrega">⏱️ Tempo estimado: selecione seu bairro.</p>
+                </div>
+
+                <div id="aviso-validacao" class="notice error" role="alert" aria-live="assertive" hidden></div>
+            </section>
+
+            <section class="card summary" id="resumo">
+                <div class="section-heading">
+                    <div class="section-number">05</div>
+                    <div>
+                        <h2>Resumo do pedido</h2>
+                        <p>Confira tudo antes de confirmar.</p>
+                    </div>
+                </div>
+
+                <div id="itens-resumo" aria-live="polite"></div>
+
+                <div class="total-line">
+                    <span>Total do pedido</span>
+                    <strong id="total">R$ 16,00</strong>
+                </div>
+
+                <button id="confirmar" class="primary-button" type="button">Confirmar pedido <span>→</span></button>
+                <button id="novo-pedido" class="secondary-button" type="button">Limpar e fazer novo pedido</button>
+
+                <div id="resultado" class="confirmation" hidden>
+                    <h3>✅ Pedido preparado!</h3>
+                    <p id="mensagem-confirmacao"></p>
+                    <p><strong>Código do pedido:</strong> <span id="codigo-pedido"></span></p>
+                    <p id="previsao-confirmacao"></p>
+                    <button id="copiar-pedido" class="primary-button" type="button">Copiar pedido completo</button>
+                    <button id="compartilhar-pedido" class="secondary-button" type="button">Compartilhar pedido</button>
+                    <p class="field-help">Esta página não envia o pedido automaticamente para a loja.</p>
+                </div>
+            </section>
+        </form>
+
+        <section class="card tracking-card" id="rastreamento">
+            <div class="section-heading">
+                <div class="section-number">06</div>
+                <div>
+                    <h2>Rastreie seu pedido</h2>
+                    <p>Consulte as informações do pedido neste dispositivo.</p>
+                </div>
+            </div>
+
+            <label for="codigo-rastreio">Código do pedido</label>
+            <div class="tracking-controls">
+                <input id="codigo-rastreio" type="text" placeholder="Digite seu código de pedido" autocomplete="off">
+                <button id="rastrear" class="primary-button" type="button">Consultar pedido</button>
+            </div>
+            <div id="resultado-rastreio" class="tracking-result" role="status" aria-live="polite" hidden></div>
+            <p class="field-help">O rastreamento demonstrativo não representa a localização de um entregador em tempo real.</p>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <img class="logo" src="logo-hevo.png" alt="HEVO AÇAÍ">
+        <p class="footer-brand">HEVO <span>AÇAÍ</span></p>
+        <p>Seu açaí do seu jeito! 🍇</p>
+        <p>Feito com carinho para matar sua vontade de açaí.</p>
+    </footer>
+</body>
+</html>
