@@ -1,40 +1,41 @@
 "use strict";
 
-const formulario = document.getElementById("pedido-form");
-const resumo = document.getElementById("itens-resumo");
-const totalElemento = document.getElementById("total");
+const tamanho = document.getElementById("tamanho");
 const cliente = document.getElementById("cliente");
 const telefone = document.getElementById("telefone");
-const codigoPais = document.getElementById("codigo-pais");
 const bairro = document.getElementById("bairro");
-const observacao = document.getElementById("observacao");
+const observacoes = document.getElementById("observacoes");
+const adicionais = document.querySelectorAll('input[name="adicional"]');
+const resumo = document.getElementById("resumo");
+const total = document.getElementById("total");
 const confirmar = document.getElementById("confirmar");
-const novoPedidoBotao = document.getElementById("novo-pedido");
-const resultado = document.getElementById("resultado");
-const mensagemConfirmacao = document.getElementById("mensagem-confirmacao");
-const codigoPedidoElemento = document.getElementById("codigo-pedido");
-const previsaoConfirmacao = document.getElementById("previsao-confirmacao");
-const copiarPedidoBotao = document.getElementById("copiar-pedido");
-const compartilharPedidoBotao = document.getElementById("compartilhar-pedido");
-const botaoTema = document.getElementById("theme-toggle");
-const avisoLimite = document.getElementById("aviso-limite");
-const avisoValidacao = document.getElementById("aviso-validacao");
-const taxaEntregaTexto = document.getElementById("taxa-entrega");
-const tempoEntregaTexto = document.getElementById("tempo-entrega");
-const botaoRecursos = document.getElementById("recursos-toggle");
-const menuRecursos = document.getElementById("recursos-menu");
-const campoCodigoRastreio = document.getElementById("codigo-rastreio");
-const botaoRastrear = document.getElementById("rastrear");
-const resultadoRastreio = document.getElementById("resultado-rastreio");
+const novo = document.getElementById("novo");
+const tema = document.getElementById("tema");
+const rastreamento = document.getElementById("rastreamento");
 
 const limitesAdicionais = {
-    "300": 2,
-    "500": 4,
-    "700": 6,
-    "1000": 8
+    pequeno: 2,
+    medio: 3,
+    grande: 4
 };
 
-let ultimoPedido = "";
+const coordenadasEntrega = {
+    loja: [-25.458, -49.527],
+    Centro: [-25.4589, -49.5278],
+    Vila: [-25.449, -49.519],
+    Jardim: [-25.466, -49.515],
+    Industrial: [-25.470, -49.540],
+    default: [-25.4589, -49.5278]
+};
+
+let ultimoPedido = null;
+let mapaEntrega = null;
+let marcadorMoto = null;
+let marcadorDestino = null;
+let linhaRota = null;
+let animacaoMoto = null;
+let timerChegada = null;
+let identificadorEntrega = 0;
 
 function dinheiro(valor) {
     return valor.toLocaleString("pt-BR", {
@@ -44,594 +45,561 @@ function dinheiro(valor) {
 }
 
 function selecionado(nome) {
-    return document.querySelector(`input[name="${nome}"]:checked`);
+    const campo = document.querySelector(
+        'input[name="' + nome + '"]:checked'
+    );
+
+    return campo ? campo.value : "";
 }
 
 function adicionaisMarcados() {
-    return [...document.querySelectorAll('input[name="adicional"]:checked')];
+    return Array.from(adicionais)
+        .filter(function (item) {
+            return item.checked;
+        });
 }
 
-function calcularTaxaEntrega() {
-    if (!bairro.value) {
+function calcularTaxa() {
+    if (!bairro || !bairro.value) {
         return 0;
     }
 
-    return bairro.value === "Centro" ? 5 : 10;
-}
+    const opcao = bairro.options[bairro.selectedIndex];
 
-function calcularTempoEntrega() {
-    if (!bairro.value) {
-        return "";
+    if (!opcao) {
+        return 0;
     }
 
-    return bairro.value === "Centro"
-        ? "25 a 40 minutos"
-        : "35 a 60 minutos";
+    return Number(opcao.dataset.taxa || 0);
 }
 
-function atualizarTextoTaxa() {
-    if (!bairro.value) {
-        taxaEntregaTexto.textContent = "Selecione seu bairro para calcular.";
-        tempoEntregaTexto.textContent = "⏱️ Tempo estimado: selecione seu bairro.";
-        return;
+function calcularTempo() {
+    if (!bairro || !bairro.value) {
+        return 0;
     }
 
-    taxaEntregaTexto.textContent =
-        `Taxa para ${bairro.value}: ${dinheiro(calcularTaxaEntrega())}.`;
+    const opcao = bairro.options[bairro.selectedIndex];
 
-    tempoEntregaTexto.textContent =
-        `⏱️ Tempo estimado de entrega: ${calcularTempoEntrega()}.`;
-}
-
-function mostrarAviso(elemento, mensagem) {
-    elemento.textContent = mensagem;
-    elemento.hidden = false;
-}
-
-function esconderAviso(elemento) {
-    elemento.textContent = "";
-    elemento.hidden = true;
-}
-
-function obterPedido() {
-    const tamanho = selecionado("tamanho");
-    const cobertura = selecionado("base");
-
-    if (!tamanho || !cobertura) {
-        return null;
+    if (!opcao) {
+        return 0;
     }
 
-    const adicionais = adicionaisMarcados();
-    const taxa = calcularTaxaEntrega();
+    return Number(opcao.dataset.tempo || 0);
+}
 
-    const itens = [
-        {
-            nome: `${tamanho.value} ml`,
-            preco: Number(tamanho.dataset.price)
-        },
-        {
-            nome: `Cobertura: ${cobertura.value}`,
-            preco: Number(cobertura.dataset.price)
-        },
-        ...adicionais.map(item => ({
-            nome: item.value,
-            preco: Number(item.dataset.price)
-        }))
-    ];
+function calcularTotal() {
+    const opcaoTamanho = tamanho
+        ? tamanho.options[tamanho.selectedIndex]
+        : null;
 
-    if (bairro.value) {
-        itens.push({
-            nome: `Entrega - ${bairro.value}`,
-            preco: taxa
-        });
-    }
+    let valor = opcaoTamanho
+        ? Number(opcaoTamanho.dataset.preco || 0)
+        : 0;
 
-    const total = itens.reduce(
-        (soma, item) => soma + item.preco,
-        0
-    );
+    adicionaisMarcados().forEach(function (item) {
+        valor += Number(item.dataset.preco || 0);
+    });
 
-    return {
-        tamanho: tamanho.value,
-        cliente: cliente.value.trim(),
-        telefone: telefone.value.trim(),
-        codigoPais: codigoPais.value,
-        bairro: bairro.value,
-        observacao: observacao.value.trim(),
-        itens,
-        total,
-        quantidadeAdicionais: adicionais.length,
-        limite: limitesAdicionais[tamanho.value],
-        taxa,
-        tempo: calcularTempoEntrega()
-    };
+    valor += calcularTaxa();
+
+    return valor;
 }
 
 function atualizarResumo() {
-    atualizarTextoTaxa();
-
-    const pedido = obterPedido();
-
-    if (!pedido) {
+    if (!resumo || !total) {
         return;
     }
 
-    const fragmento = document.createDocumentFragment();
+    const opcaoTamanho = tamanho
+        ? tamanho.options[tamanho.selectedIndex]
+        : null;
 
-    pedido.itens.forEach(item => {
-        const linha = document.createElement("p");
-        const nome = document.createElement("span");
-        const preco = document.createElement("strong");
+    const nomeTamanho = opcaoTamanho
+        ? opcaoTamanho.textContent
+        : "Não selecionado";
 
-        nome.textContent = item.nome;
-        preco.textContent = dinheiro(item.preco);
+    const escolhidos = adicionaisMarcados();
 
-        linha.append(nome, preco);
-        fragmento.appendChild(linha);
-    });
+    resumo.innerHTML = `
+        <p><strong>Tamanho:</strong> ${nomeTamanho}</p>
+        <p><strong>Adicionais:</strong>
+            ${escolhidos.length
+                ? escolhidos.map(function (item) {
+                    return item.value;
+                }).join(", ")
+                : "Nenhum"}
+        </p>
+        <p><strong>Entrega:</strong>
+            ${bairro && bairro.value
+                ? bairro.options[bairro.selectedIndex].textContent
+                : "Não selecionado"}
+        </p>
+    `;
 
-    resumo.replaceChildren(fragmento);
-    totalElemento.textContent = dinheiro(pedido.total);
-
-    if (pedido.quantidadeAdicionais >= pedido.limite) {
-        mostrarAviso(
-            avisoLimite,
-            `Você selecionou ${pedido.quantidadeAdicionais} de ${pedido.limite} adicionais permitidos para ${pedido.tamanho} ml.`
-        );
-    } else {
-        esconderAviso(avisoLimite);
-    }
+    total.textContent = dinheiro(calcularTotal());
 }
 
-function atualizarEstadoAdicionais() {
-    const tamanho = selecionado("tamanho");
+function atualizarLimiteAdicionais() {
+    const tamanhoEscolhido = tamanho ? tamanho.value : "";
+    const limite = limitesAdicionais[tamanhoEscolhido];
 
-    if (!tamanho) {
+    if (!limite) {
         return;
     }
 
-    const limite = limitesAdicionais[tamanho.value];
-    const quantidade = adicionaisMarcados().length;
-
-    document.querySelectorAll('input[name="adicional"]').forEach(item => {
-        item.disabled = !item.checked && quantidade >= limite;
-    });
-}
-
-function ajustarAdicionaisAoTamanho() {
-    const tamanho = selecionado("tamanho");
-
-    if (!tamanho) {
-        return;
-    }
-
-    const limite = limitesAdicionais[tamanho.value];
     const marcados = adicionaisMarcados();
 
-    if (marcados.length > limite) {
-        marcados.slice(limite).forEach(item => {
-            item.checked = false;
-        });
+    adicionais.forEach(function (item) {
+        item.disabled =
+            !item.checked && marcados.length >= limite;
+    });
+}
 
-        mostrarAviso(
-            avisoLimite,
-            `O tamanho ${tamanho.value} ml permite até ${limite} adicionais. Os excedentes foram desmarcados.`
-        );
-    }
-
-    atualizarEstadoAdicionais();
+function atualizarTela() {
+    atualizarLimiteAdicionais();
     atualizarResumo();
 }
-
-function validarTelefone(valor) {
-    const numeros = valor.replace(/\D/g, "");
-    return numeros.length === 10 || numeros.length === 11;
-}
-
-function formatarTelefone() {
-    const numeros = telefone.value.replace(/\D/g, "").slice(0, 11);
-
-    if (numeros.length <= 2) {
-        telefone.value = numeros.length ? `(${numeros}` : "";
-    } else if (numeros.length <= 6) {
-        telefone.value = `(${numeros.slice(0, 2)}) ${numeros.slice(2)}`;
-    } else if (numeros.length <= 10) {
-        telefone.value =
-            `(${numeros.slice(0, 2)}) ${numeros.slice(2, 6)}-${numeros.slice(6)}`;
-    } else {
-        telefone.value =
-            `(${numeros.slice(0, 2)}) ${numeros.slice(2, 7)}-${numeros.slice(7)}`;
-    }
-
-    esconderAviso(avisoValidacao);
-}
-
-function montarTextoPedido(pedido) {
-    return [
-        "🍇 HEVO AÇAÍ — PEDIDO",
-        "",
-        `Código: ${pedido.codigo}`,
-        `Nome: ${pedido.cliente}`,
-        `Telefone: ${pedido.codigoPais} ${pedido.telefone}`,
-        `Bairro: ${pedido.bairro}`,
-        "",
-        "ITENS DO PEDIDO:",
-        ...pedido.itens.map(item =>
-            `${item.nome}: ${dinheiro(item.preco)}`
-        ),
-        "",
-        `Taxa de entrega: ${dinheiro(pedido.taxa)}`,
-        `Previsão estimada: ${pedido.tempo}`,
-        `TOTAL: ${dinheiro(pedido.total)}`,
-        `Observações: ${pedido.observacao || "Nenhuma"}`,
-        "",
-        "Pedido criado pelo site HEVO AÇAÍ."
-    ].join("\n");
-}
-
-function validarPedido(pedido) {
-    esconderAviso(avisoValidacao);
-
-    if (!pedido.cliente) {
-        mostrarAviso(avisoValidacao, "Preencha seu nome completo.");
-        cliente.focus();
+function validarPedido() {
+    if (!tamanho || !tamanho.value) {
+        alert("Selecione o tamanho do açaí.");
         return false;
     }
 
-    if (!validarTelefone(pedido.telefone)) {
-        mostrarAviso(
-            avisoValidacao,
-            "Informe um telefone válido com DDD, contendo 10 ou 11 números."
-        );
-        telefone.focus();
+    if (!cliente || !cliente.value.trim()) {
+        alert("Digite seu nome.");
         return false;
     }
 
-    if (!pedido.bairro) {
-        mostrarAviso(avisoValidacao, "Selecione seu bairro de entrega.");
-        bairro.focus();
+    if (!telefone || !telefone.value.trim()) {
+        alert("Digite seu telefone.");
         return false;
     }
 
-    if (pedido.quantidadeAdicionais > pedido.limite) {
-        mostrarAviso(
-            avisoValidacao,
-            `O copo de ${pedido.tamanho} ml permite até ${pedido.limite} adicionais.`
-        );
+    if (!bairro || !bairro.value) {
+        alert("Selecione seu bairro.");
+        return false;
+    }
+
+    const limite = limitesAdicionais[tamanho.value];
+
+    if (
+        limite !== undefined &&
+        adicionaisMarcados().length > limite
+    ) {
+        alert("Você selecionou adicionais demais para esse tamanho.");
         return false;
     }
 
     return true;
 }
 
-function gerarCodigoPedido() {
-    const numero = Math.floor(100000 + Math.random() * 900000);
-    return `HEVO-${numero}`;
+function gerarCodigo() {
+    return "HEVO-" +
+        Math.random().toString(36).substring(2, 7).toUpperCase();
+}
+
+function montarPedido() {
+    const opcaoTamanho = tamanho.options[tamanho.selectedIndex];
+    const itens = [];
+
+    itens.push({
+        nome: opcaoTamanho.textContent,
+        preco: Number(opcaoTamanho.dataset.preco || 0)
+    });
+
+    adicionaisMarcados().forEach(function (item) {
+        itens.push({
+            nome: item.value,
+            preco: Number(item.dataset.preco || 0)
+        });
+    });
+
+    const taxa = calcularTaxa();
+
+    itens.push({
+        nome: bairro.options[bairro.selectedIndex].textContent,
+        preco: taxa
+    });
+
+    return {
+        codigo: gerarCodigo(),
+        tamanho: tamanho.value,
+        cliente: cliente.value.trim(),
+        telefone: telefone.value.trim(),
+        bairro: bairro.value,
+        observacoes: observacoes
+            ? observacoes.value.trim()
+            : "",
+        itens: itens,
+        total: itens.reduce(function (soma, item) {
+            return soma + item.preco;
+        }, 0),
+        tempo: calcularTempo(),
+        data: new Date().toLocaleString("pt-BR")
+    };
 }
 
 function salvarPedido(pedido) {
     try {
-        const pedidos = JSON.parse(
-            localStorage.getItem("hevo-pedidos") || "[]"
-        );
-
-        pedidos.push(pedido);
-
         localStorage.setItem(
-            "hevo-pedidos",
-            JSON.stringify(pedidos)
+            "hevoUltimoPedido",
+            JSON.stringify(pedido)
         );
-
-        return true;
-    } catch {
-        return false;
+    } catch (erro) {
+        console.error("Não foi possível salvar o pedido.", erro);
     }
 }
 
 function confirmarPedido() {
-    const pedido = obterPedido();
-
-    if (!pedido || !validarPedido(pedido)) {
+    if (!validarPedido()) {
         return;
     }
 
-    pedido.codigo = gerarCodigoPedido();
-    pedido.status = "Pedido registrado neste navegador";
-    pedido.criadoEm = new Date().toISOString();
+    ultimoPedido = montarPedido();
+    salvarPedido(ultimoPedido);
 
-    ultimoPedido = montarTextoPedido(pedido);
+    const mensagem =
+        "Pedido confirmado com sucesso!\n\n" +
+        "Código: " + ultimoPedido.codigo + "\n" +
+        "Cliente: " + ultimoPedido.cliente + "\n" +
+        "Total: " + dinheiro(ultimoPedido.total) + "\n\n" +
+        "Acompanhe a entrega pelo mapa.";
 
-    const salvo = salvarPedido(pedido);
+    alert(mensagem);
 
-    mensagemConfirmacao.textContent =
-        `Pedido preparado para ${pedido.cliente}. Total: ${dinheiro(pedido.total)}.`;
-
-    codigoPedidoElemento.textContent = pedido.codigo;
-
-    previsaoConfirmacao.textContent =
-        `Previsão estimada: ${pedido.tempo}. O prazo é aproximado e não representa confirmação em tempo real.`;
-
-    resultado.hidden = false;
-
-    if (!salvo) {
-        mensagemConfirmacao.textContent +=
-            " Não foi possível salvar o pedido neste navegador. Copie os dados antes de sair.";
+    if (rastreamento) {
+        rastreamento.style.display = "block";
     }
 
-    resultado.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest"
-    });
+    simularEntrega(ultimoPedido.bairro);
 }
 
-async function copiarTexto(texto) {
-    try {
-        if (navigator.clipboard && window.isSecureContext) {
-            await navigator.clipboard.writeText(texto);
-            return true;
-        }
-    } catch {}
-
-    const campo = document.createElement("textarea");
-    campo.value = texto;
-    campo.setAttribute("readonly", "");
-    campo.style.position = "fixed";
-    campo.style.opacity = "0";
-
-    document.body.appendChild(campo);
-    campo.select();
-
-    let copiado = false;
-
-    try {
-        copiado = document.execCommand("copy");
-    } catch {
-        copiado = false;
-    }
-
-    campo.remove();
-    return copiado;
-}
-
-async function copiarPedido() {
-    if (!ultimoPedido) {
-        return;
-    }
-
-    const copiado = await copiarTexto(ultimoPedido);
-
-    if (copiado) {
-        copiarPedidoBotao.textContent = "✅ Pedido copiado!";
-
-        setTimeout(() => {
-            copiarPedidoBotao.textContent = "Copiar pedido completo";
-        }, 2000);
+function copiarTexto(texto) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(texto)
+            .then(function () {
+                alert("Pedido copiado!");
+            })
+            .catch(function () {
+                alert(texto);
+            });
     } else {
-        mensagemConfirmacao.textContent =
-            "Não foi possível copiar automaticamente. Tente selecionar e copiar o texto do pedido.";
+        alert(texto);
     }
 }
 
-async function compartilharPedido() {
+function compartilharPedido() {
     if (!ultimoPedido) {
+        alert("Confirme um pedido primeiro.");
         return;
     }
+
+    const texto =
+        "HEVO AÇAÍ\n" +
+        "Pedido: " + ultimoPedido.codigo + "\n" +
+        "Cliente: " + ultimoPedido.cliente + "\n" +
+        "Total: " + dinheiro(ultimoPedido.total);
 
     if (navigator.share) {
-        try {
-            await navigator.share({
-                title: "Pedido HEVO AÇAÍ",
-                text: ultimoPedido
-            });
-            return;
-        } catch (erro) {
-            if (erro.name === "AbortError") {
-                return;
-            }
-        }
+        navigator.share({
+            title: "Pedido HEVO AÇAÍ",
+            text: texto
+        }).catch(function () {});
+    } else {
+        copiarTexto(texto);
+    }
+}
+function pararAnimacaoMoto() {
+    if (animacaoMoto !== null) {
+        clearInterval(animacaoMoto);
+        animacaoMoto = null;
     }
 
-    const copiado = await copiarTexto(ultimoPedido);
-
-    mensagemConfirmacao.textContent = copiado
-        ? "Pedido copiado! Você já pode colar no aplicativo de mensagens."
-        : "Não foi possível compartilhar ou copiar automaticamente.";
+    if (timerChegada !== null) {
+        clearTimeout(timerChegada);
+        timerChegada = null;
+    }
 }
 
-function novoPedido() {
-    formulario.reset();
+function iniciarMapaEntrega() {
+    const elementoMapa = document.getElementById("mapaEntrega");
 
-    document.querySelector('input[name="tamanho"][value="500"]').checked = true;
-    document.querySelector('input[name="base"][value="Chocolate"]').checked = true;
+    if (!elementoMapa || typeof L === "undefined") {
+        return;
+    }
 
-    ultimoPedido = "";
-    resultado.hidden = true;
-    mensagemConfirmacao.textContent = "";
-    codigoPedidoElemento.textContent = "";
-    previsaoConfirmacao.textContent = "";
+    if (mapaEntrega) {
+        mapaEntrega.invalidateSize();
+        return;
+    }
 
-    esconderAviso(avisoLimite);
-    esconderAviso(avisoValidacao);
-
-    atualizarEstadoAdicionais();
-    atualizarResumo();
-
-    window.scrollTo({
-        top: 0,
-        behavior: "smooth"
-    });
-}
-
-function aplicarTema(temaClaro) {
-    document.body.classList.toggle("tema-claro", temaClaro);
-
-    botaoTema.textContent = temaClaro ? "🌙" : "☀️";
-
-    botaoTema.setAttribute(
-        "aria-label",
-        temaClaro ? "Ativar tema escuro" : "Ativar tema claro"
+    mapaEntrega = L.map("mapaEntrega").setView(
+        coordenadasEntrega.loja,
+        14
     );
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap"
+    }).addTo(mapaEntrega);
+
+    marcadorMoto = L.marker(coordenadasEntrega.loja)
+        .addTo(mapaEntrega)
+        .bindPopup("🏍️ Moto da HEVO AÇAÍ");
+
+    marcadorDestino = L.marker(coordenadasEntrega.loja)
+        .addTo(mapaEntrega)
+        .bindPopup("📍 Destino da entrega");
+
+    linhaRota = L.polyline(
+        [coordenadasEntrega.loja],
+        {
+            color: "#7c3aed",
+            weight: 5
+        }
+    ).addTo(mapaEntrega);
 }
 
-function carregarTema() {
-    let temaSalvo = "escuro";
+function mostrarEfeitoChegada() {
+    const camada = document.createElement("div");
 
-    try {
-        temaSalvo = localStorage.getItem("hevo-tema") || "escuro";
-    } catch {
-        temaSalvo = "escuro";
+    camada.style.position = "fixed";
+    camada.style.inset = "0";
+    camada.style.pointerEvents = "none";
+    camada.style.zIndex = "99999";
+    camada.style.overflow = "hidden";
+
+    document.body.appendChild(camada);
+
+    const emojis = ["🎉", "🎊", "🍇", "💜", "✨", "🥳"];
+
+    for (let i = 0; i < 50; i++) {
+        const confete = document.createElement("span");
+
+        confete.textContent =
+            emojis[Math.floor(Math.random() * emojis.length)];
+
+        confete.style.position = "absolute";
+        confete.style.left = Math.random() * 100 + "%";
+        confete.style.top = "-40px";
+        confete.style.fontSize =
+            18 + Math.random() * 22 + "px";
+
+        confete.style.animation =
+            "hevoConfete " +
+            (2 + Math.random() * 3) +
+            "s linear forwards";
+
+        camada.appendChild(confete);
     }
 
-    aplicarTema(temaSalvo === "claro");
+    if (!document.getElementById("hevoEstiloConfete")) {
+        const estilo = document.createElement("style");
+
+        estilo.id = "hevoEstiloConfete";
+        estilo.textContent = `
+            @keyframes hevoConfete {
+                to {
+                    transform: translateY(110vh) rotate(720deg);
+                    opacity: 0;
+                }
+            }
+        `;
+
+        document.head.appendChild(estilo);
+    }
+
+    setTimeout(function () {
+        alert("🎉 SEU PEDIDO CHEGOU! Obrigado por pedir na HEVO AÇAÍ! 🍇");
+    }, 400);
+
+    setTimeout(function () {
+        camada.remove();
+    }, 5500);
+}
+
+function simularEntrega(bairroEscolhido) {
+    pararAnimacaoMoto();
+
+    const idDestaEntrega = ++identificadorEntrega;
+
+    iniciarMapaEntrega();
+
+    if (!mapaEntrega || !marcadorMoto || !marcadorDestino) {
+        return;
+    }
+
+    const destino =
+        coordenadasEntrega[bairroEscolhido] ||
+        coordenadasEntrega.default;
+
+    const origem = coordenadasEntrega.loja;
+
+    marcadorMoto.setLatLng(origem);
+    marcadorDestino.setLatLng(destino);
+
+    const rota = [
+        origem,
+        [
+            (origem[0] + destino[0]) / 2 + 0.002,
+            (origem[1] + destino[1]) / 2
+        ],
+        destino
+    ];
+
+    linhaRota.setLatLngs(rota);
+
+    mapaEntrega.fitBounds(
+        L.latLngBounds([origem, destino]),
+        { padding: [30, 30] }
+    );
+
+    const passos = 80;
+    let passoAtual = 0;
+
+    animacaoMoto = setInterval(function () {
+        if (idDestaEntrega !== identificadorEntrega) {
+            pararAnimacaoMoto();
+            return;
+        }
+
+        passoAtual++;
+
+        const progresso = passoAtual / passos;
+        const latitude = origem[0] +
+            (destino[0] - origem[0]) * progresso;
+        const longitude = origem[1] +
+            (destino[1] - origem[1]) * progresso;
+
+        marcadorMoto.setLatLng([latitude, longitude]);
+
+        if (passoAtual >= passos) {
+            pararAnimacaoMoto();
+
+            marcadorMoto.setLatLng(destino);
+            marcadorDestino.openPopup();
+
+            mostrarEfeitoChegada();
+        }
+    }, 200);
+}
+function novoPedido() {
+    pararAnimacaoMoto();
+    identificadorEntrega++;
+
+    ultimoPedido = null;
+
+    if (tamanho) tamanho.selectedIndex = 0;
+    if (cliente) cliente.value = "";
+    if (telefone) telefone.value = "";
+    if (bairro) bairro.selectedIndex = 0;
+    if (observacoes) observacoes.value = "";
+
+    adicionais.forEach(function (item) {
+        item.checked = false;
+        item.disabled = false;
+    });
+
+    if (rastreamento) {
+        rastreamento.style.display = "none";
+    }
+
+    if (mapaEntrega && marcadorMoto && marcadorDestino) {
+        marcadorMoto.setLatLng(coordenadasEntrega.loja);
+        marcadorDestino.setLatLng(coordenadasEntrega.loja);
+
+        if (linhaRota) {
+            linhaRota.setLatLngs([coordenadasEntrega.loja]);
+        }
+
+        mapaEntrega.setView(coordenadasEntrega.loja, 14);
+    }
+
+    atualizarTela();
 }
 
 function alternarTema() {
-    const temaClaro = !document.body.classList.contains("tema-claro");
+    document.body.classList.toggle("modo-escuro");
 
-    aplicarTema(temaClaro);
+    const escuro = document.body.classList.contains("modo-escuro");
 
     try {
-        localStorage.setItem("hevo-tema", temaClaro ? "claro" : "escuro");
-    } catch {}
+        localStorage.setItem("hevoTemaEscuro", escuro ? "sim" : "nao");
+    } catch (erro) {}
 }
 
-function alternarRecursos() {
-    menuRecursos.hidden = !menuRecursos.hidden;
-
-    botaoRecursos.setAttribute(
-        "aria-expanded",
-        String(!menuRecursos.hidden)
-    );
-
-    botaoRecursos.textContent = menuRecursos.hidden
-        ? "☰ Recursos"
-        : "✕ Fechar recursos";
-}
-
-function adicionarTexto(elemento, texto, tag = "p") {
-    const novoElemento = document.createElement(tag);
-    novoElemento.textContent = texto;
-    elemento.appendChild(novoElemento);
-    return novoElemento;
+function carregarTema() {
+    try {
+        if (localStorage.getItem("hevoTemaEscuro") === "sim") {
+            document.body.classList.add("modo-escuro");
+        }
+    } catch (erro) {}
 }
 
 function consultarRastreamento() {
-    const codigo = campoCodigoRastreio.value.trim().toUpperCase();
-
-    resultadoRastreio.replaceChildren();
-    resultadoRastreio.hidden = false;
-
-    if (!codigo) {
-        adicionarTexto(
-            resultadoRastreio,
-            "Digite o código do pedido para consultar."
-        );
-        campoCodigoRastreio.focus();
+    if (!ultimoPedido) {
+        alert("Você ainda não confirmou um pedido.");
         return;
     }
 
-    let pedidos = [];
-
-    try {
-        pedidos = JSON.parse(localStorage.getItem("hevo-pedidos") || "[]");
-    } catch {
-        pedidos = [];
-    }
-
-    const pedido = pedidos.find(item => item.codigo === codigo);
-
-    if (!pedido) {
-        adicionarTexto(resultadoRastreio, "Pedido não encontrado", "h3");
-
-        adicionarTexto(
-            resultadoRastreio,
-            "Confira o código. Pedidos de outros navegadores ou dispositivos não aparecem nesta consulta."
-        );
-
-        return;
-    }
-
-    adicionarTexto(resultadoRastreio, "📦 Pedido localizado", "h3");
-    adicionarTexto(resultadoRastreio, `Código: ${pedido.codigo}`);
-    adicionarTexto(resultadoRastreio, `Status demonstrativo: ${pedido.status}`);
-    adicionarTexto(resultadoRastreio, `Total: ${dinheiro(pedido.total)}`);
-
-    adicionarTexto(
-        resultadoRastreio,
-        `Previsão estimada: ${pedido.tempo || "Não disponível"}`
+    alert(
+        "📦 Acompanhe seu pedido!\n\n" +
+        "Código: " + ultimoPedido.codigo + "\n" +
+        "Bairro: " + ultimoPedido.bairro + "\n" +
+        "Tempo estimado: aproximadamente 16 segundos na demonstração."
     );
 
-    adicionarTexto(
-        resultadoRastreio,
-        "Esta consulta verifica apenas o pedido salvo neste navegador. Não mostra a localização do entregador nem confirma o recebimento pela loja."
-    );
+    if (mapaEntrega) {
+        mapaEntrega.invalidateSize();
+    }
 }
 
-formulario.addEventListener("change", evento => {
-    if (evento.target.matches('input[name="tamanho"]')) {
-        ajustarAdicionaisAoTamanho();
-        return;
+document.addEventListener("DOMContentLoaded", function () {
+    carregarTema();
+    atualizarTela();
+
+    iniciarMapaEntrega();
+
+    if (tamanho) {
+        tamanho.addEventListener("change", atualizarTela);
     }
 
-    if (evento.target.matches('input[name="adicional"]')) {
-        const tamanho = selecionado("tamanho");
-        const limite = limitesAdicionais[tamanho.value];
-        const marcados = adicionaisMarcados();
-
-        if (evento.target.checked && marcados.length > limite) {
-            evento.target.checked = false;
-
-            mostrarAviso(
-                avisoLimite,
-                `Limite atingido! O copo de ${tamanho.value} ml permite até ${limite} adicionais.`
-            );
-        }
-
-        atualizarEstadoAdicionais();
-        atualizarResumo();
-        return;
-    }
-
-    if (evento.target.matches('input[name="base"]')) {
-        atualizarResumo();
-    }
-});
-
-bairro.addEventListener("change", atualizarResumo);
-telefone.addEventListener("input", formatarTelefone);
-
-cliente.addEventListener("input", () => {
-    esconderAviso(avisoValidacao);
-});
-
-bairro.addEventListener("change", () => {
-    esconderAviso(avisoValidacao);
-});
-
-botaoTema.addEventListener("click", alternarTema);
-botaoRecursos.addEventListener("click", alternarRecursos);
-confirmar.addEventListener("click", confirmarPedido);
-novoPedidoBotao.addEventListener("click", novoPedido);
-copiarPedidoBotao.addEventListener("click", copiarPedido);
-compartilharPedidoBotao.addEventListener("click", compartilharPedido);
-botaoRastrear.addEventListener("click", consultarRastreamento);
-
-campoCodigoRastreio.addEventListener("keydown", evento => {
-    if (evento.key === "Enter") {
-        evento.preventDefault();
-        consultarRastreamento();
-    }
-});
-
-menuRecursos.querySelectorAll("a").forEach(link => {
-    link.addEventListener("click", () => {
-        menuRecursos.hidden = true;
-        botaoRecursos.setAttribute("aria-expanded", "false");
-        botaoRecursos.textContent = "☰ Recursos";
+    adicionais.forEach(function (item) {
+        item.addEventListener("change", atualizarTela);
     });
-});
 
-carregarTema();
-botaoRecursos.setAttribute("aria-expanded", "false");
-atualizarEstadoAdicionais();
-atualizarResumo();
+    if (bairro) {
+        bairro.addEventListener("change", atualizarTela);
+    }
+
+    if (confirmar) {
+        confirmar.addEventListener("click", confirmarPedido);
+    }
+
+    if (novo) {
+        novo.addEventListener("click", novoPedido);
+    }
+
+    if (tema) {
+        tema.addEventListener("click", alternarTema);
+    }
+
+    const botaoCompartilhar =
+        document.getElementById("compartilharPedido");
+
+    if (botaoCompartilhar) {
+        botaoCompartilhar.addEventListener(
+            "click",
+            compartilharPedido
+        );
+    }
+
+    const botaoRastreamento =
+        document.getElementById("consultarRastreamento");
+
+    if (botaoRastreamento) {
+        botaoRastreamento.addEventListener(
+            "click",
+            consultarRastreamento
+        );
+    }
+});
