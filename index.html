@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -8,6 +7,8 @@
     <meta name="description" content="Monte seu açaí na HEVO AÇAÍ. Escolha o tamanho, cobertura e adicionais.">
     <title>HEVO AÇAÍ | Monte seu Açaí</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="script.js" defer></script>
 </head>
 <body>
@@ -281,6 +282,24 @@
             </div>
             <div id="resultado-rastreio" class="tracking-result" role="status" aria-live="polite" hidden></div>
             <p class="field-help">O rastreamento demonstrativo não representa a localização de um entregador em tempo real.</p>
+        </section>
+
+        <section class="card tracking-map-card" id="mapa-entrega">
+            <div class="section-heading">
+                <div class="section-number">🗺️</div>
+                <div>
+                    <h2>Mapa da entrega</h2>
+                    <p>Visualização demonstrativa da rota da HEVO AÇAÍ até o bairro selecionado.</p>
+                </div>
+            </div>
+            <div id="mapa-campo-largo" class="mapa-campo-largo" role="application"
+                 aria-label="Mapa demonstrativo de entrega em Campo Largo"></div>
+            <div class="mapa-informacoes">
+                <p id="mapa-status-moto">Aguardando pedido</p>
+                <p id="mapa-bairro-texto">Selecione um bairro para visualizar a rota simulada.</p>
+                <p id="mapa-distancia">A rota aparecerá aqui.</p>
+                <p>Tempo da simulação: <strong id="mapa-tempo-texto">-- min</strong></p>
+            </div>
         </section>
     </main>
 
