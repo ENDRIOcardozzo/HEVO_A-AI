@@ -1,4 +1,3 @@
-
 "use strict";
 
 const formulario = document.getElementById("pedido-form");
@@ -62,7 +61,6 @@ const coordenadasEntrega = {
 const pontoLoja = [-25.4630, -49.5330];
 const DURACAO_ENTREGA = 16000;
 const INTERVALO_ANIMACAO = 100;
-const TOTAL_ETAPAS = DURACAO_ENTREGA / INTERVALO_ANIMACAO;
 
 let ultimoPedido = "";
 let mapaEntrega = null;
@@ -334,11 +332,6 @@ function salvarPedido(pedido) {
 }
 
 function confirmarPedido() {
-    if (entregaEmAndamento) {
-        mostrarAviso(avisoValidacao, "A entrega já está em andamento.");
-        return;
-    }
-
     const pedido = obterPedido();
 
     if (!pedido || !validarPedido(pedido)) return;
@@ -720,7 +713,7 @@ function mostrarEfeitoChegada() {
         `;
         document.head.appendChild(estilo);
     }
-    
+
     const emojis = ["🎉", "🎊", "✨", "🍇", "🟣", "🟡", "🟢", "🔵"];
 
     for (let i = 0; i < 150; i++) {
@@ -768,6 +761,7 @@ function mostrarEfeitoChegada() {
 
 function simularEntrega(bairroDestino, pedidoConfirmado = false) {
     pararAnimacaoMoto();
+
     if (!pedidoConfirmado) {
         if (mapaStatusMoto) {
             mapaStatusMoto.textContent = "Aguardando rastreamento";
@@ -787,7 +781,10 @@ function simularEntrega(bairroDestino, pedidoConfirmado = false) {
             mapaStatusMoto.textContent = "Destino não disponível";
         }
 
-        adicionarTexto(resultadoRastreio, "Não há coordenadas cadastradas para o bairro deste pedido.");
+        adicionarTexto(
+            resultadoRastreio,
+            "Não há coordenadas cadastradas para o bairro deste pedido."
+        );
         return;
     }
 
@@ -803,6 +800,7 @@ function simularEntrega(bairroDestino, pedidoConfirmado = false) {
     if (mapaStatusMoto) {
         mapaStatusMoto.textContent = "Motoboy saindo da loja";
     }
+
     if (mapaTempoTexto) {
         mapaTempoTexto.textContent = "16 segundos";
     }
@@ -879,7 +877,9 @@ function simularEntrega(bairroDestino, pedidoConfirmado = false) {
         } else if (progresso < 0.75) {
             if (mapaStatusMoto) mapaStatusMoto.textContent = "Motoboy em rota";
         } else if (progresso < 1) {
-            if (mapaStatusMoto) mapaStatusMoto.textContent = `Chegando a ${bairroDestino}`;
+            if (mapaStatusMoto) {
+                mapaStatusMoto.textContent = `Chegando a ${bairroDestino}`;
+            }
         }
 
         if (progresso >= 1) {
@@ -889,9 +889,17 @@ function simularEntrega(bairroDestino, pedidoConfirmado = false) {
 
             marcadorMoto.setLatLng(destino);
 
-            if (mapaStatusMoto) mapaStatusMoto.textContent = "🎉 Entrega concluída!";
-            if (mapaDistancia) mapaDistancia.textContent = `Destino: ${bairroDestino}`;
-            if (mapaTempoTexto) mapaTempoTexto.textContent = "Chegou!";
+            if (mapaStatusMoto) {
+                mapaStatusMoto.textContent = "🎉 Entrega concluída!";
+            }
+
+            if (mapaDistancia) {
+                mapaDistancia.textContent = `Destino: ${bairroDestino}`;
+            }
+
+            if (mapaTempoTexto) {
+                mapaTempoTexto.textContent = "Chegou!";
+            }
 
             mostrarEfeitoChegada();
         }
@@ -917,7 +925,7 @@ formulario.addEventListener("change", evento => {
             mostrarAviso(
                 avisoLimite,
                 `Limite atingido! O copo de ${tamanho.value} ml permite até ${limite} adicionais.`
-                );
+            );
         }
 
         atualizarEstadoAdicionais();
@@ -934,19 +942,24 @@ bairro.addEventListener("change", () => {
     atualizarResumo();
 
     if (!entregaEmAndamento) {
-        if (mapaStatusMoto) mapaStatusMoto.textContent = "Aguardando rastreamento";
-        if (mapaTempoTexto) mapaTempoTexto.textContent = "Aguardando rastreamento";
+        if (mapaStatusMoto) {
+            mapaStatusMoto.textContent = "Aguardando rastreamento";
+        }
+
+        if (mapaTempoTexto) {
+            mapaTempoTexto.textContent = "Aguardando rastreamento";
+        }
+
         if (mapaBairroTexto) {
-            mapaBairroTexto.textContent =
-                bairro.value
-                    ? `📍 Destino selecionado: ${bairro.value}`
-                    : "Selecione um bairro para visualizar a rota simulada.";
+            mapaBairroTexto.textContent = bairro.value
+                ? `📍 Destino selecionado: ${bairro.value}`
+                : "Selecione um bairro para visualizar a rota simulada.";
         }
     }
 });
 
 telefone.addEventListener("input", formatarTelefone);
-cliente.addEventListener("input", () => esconderAviso(avisoValidacao));i
+cliente.addEventListener("input", () => esconderAviso(avisoValidacao));
 
 botaoTema.addEventListener("click", alternarTema);
 botaoRecursos.addEventListener("click", alternarRecursos);
@@ -955,7 +968,6 @@ novoPedidoBotao.addEventListener("click", novoPedido);
 copiarPedidoBotao.addEventListener("click", copiarPedido);
 compartilharPedidoBotao.addEventListener("click", compartilharPedido);
 botaoRastrear.addEventListener("click", consultarRastreamento);
-consultarRastreamento);
 
 campoCodigoRastreio.addEventListener("keydown", evento => {
     if (evento.key === "Enter") {
@@ -985,4 +997,9 @@ window.addEventListener("load", () => {
             mapaEntrega.invalidateSize(true);
         }
     }, 500);
+});
+
+formulario.addEventListener("submit", evento => {
+    evento.preventDefault();
+    confirmarPedido();
 });
